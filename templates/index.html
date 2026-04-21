@@ -1167,14 +1167,63 @@
             chartContainer.classList.remove('hidden');
             
             const chartType = chartConfig.chart_type || 'bar';
+            const colors = [
+                'rgba(102, 126, 234, 0.8)',
+                'rgba(118, 75, 162, 0.8)',
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(239, 68, 68, 0.8)',
+                'rgba(245, 158, 11, 0.8)'
+            ];
             
             let chartData = {
                 labels: [],
                 datasets: []
             };
             
-            if (chartConfig.data && chartConfig.data.labels) {
-                chartData.labels = chartConfig.data.labels;
+            let finalChartType = chartType;
+            if (chartType === 'histogram') finalChartType = 'bar';
+            
+            if (chartType === 'pie') {
+                if (chartConfig.data) {
+                    chartData.labels = chartConfig.data.labels || [];
+                    const values = chartConfig.data.values || [];
+                    if (values.length > 0) {
+                        chartData.datasets = [{
+                            data: values,
+                            backgroundColor: values.map((_, i) => colors[i % colors.length]),
+                            borderColor: values.map((_, i) => colors[i % colors.length].replace('0.8', '1')),
+                            borderWidth: 2
+                        }];
+                    }
+                }
+            } else if (chartType === 'scatter') {
+                finalChartType = 'scatter';
+                if (chartConfig.data && chartConfig.data.datasets && chartConfig.data.datasets.length > 0) {
+                    chartData.datasets = chartConfig.data.datasets.map((ds, index) => {
+                        const convertedData = ds.data.map(point => ({
+                            x: point[0],
+                            y: point[1]
+                        }));
+                        return {
+                            label: ds.label || `数据集 ${index + 1}`,
+                            data: convertedData,
+                            backgroundColor: colors[index % colors.length],
+                            borderColor: colors[index % colors.length].replace('0.8', '1'),
+                            borderWidth: 2,
+                            pointRadius: 5
+                        };
+                    });
+                }
+            } else if (chartConfig.data && chartConfig.data.datasets && chartConfig.data.datasets.length > 0) {
+                chartData.labels = chartConfig.data.labels || [];
+                chartData.datasets = chartConfig.data.datasets.map((ds, index) => ({
+                    label: ds.label || `数据集 ${index + 1}`,
+                    data: ds.data,
+                    backgroundColor: colors[index % colors.length],
+                    borderColor: colors[index % colors.length].replace('0.8', '1'),
+                    borderWidth: 2,
+                    fill: finalChartType === 'line' ? false : true
+                }));
             } else if (data.length > 0) {
                 const firstRow = data[0];
                 const keys = Object.keys(firstRow);
@@ -1186,28 +1235,18 @@
                 }
                 
                 if (numericKeys.length > 0) {
-                    chartData.datasets = numericKeys.map((key, index) => {
-                        const colors = [
-                            'rgba(102, 126, 234, 0.8)',
-                            'rgba(118, 75, 162, 0.8)',
-                            'rgba(16, 185, 129, 0.8)',
-                            'rgba(239, 68, 68, 0.8)',
-                            'rgba(245, 158, 11, 0.8)'
-                        ];
-                        
-                        return {
-                            label: key,
-                            data: data.map(d => d[key]),
-                            backgroundColor: colors[index % colors.length],
-                            borderColor: colors[index % colors.length].replace('0.8', '1'),
-                            borderWidth: 2,
-                            fill: chartType === 'line' ? false : true
-                        };
-                    });
+                    chartData.datasets = numericKeys.map((key, index) => ({
+                        label: key,
+                        data: data.map(d => d[key]),
+                        backgroundColor: colors[index % colors.length],
+                        borderColor: colors[index % colors.length].replace('0.8', '1'),
+                        borderWidth: 2,
+                        fill: finalChartType === 'line' ? false : true
+                    }));
                 }
             }
             
-            const options = {
+            let options = {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
@@ -1215,16 +1254,36 @@
                         position: 'top'
                     }
                 },
-                scales: chartType === 'pie' ? {} : {
+                scales: {}
+            };
+            
+            if (finalChartType === 'pie') {
+                options.scales = {};
+            } else if (finalChartType === 'scatter') {
+                options.scales = {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        title: {
+                            display: true,
+                            text: chartConfig.config?.x_axis || 'X轴'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: chartConfig.config?.y_axis || 'Y轴'
+                        }
+                    }
+                };
+            } else {
+                options.scales = {
                     y: {
                         beginAtZero: true
                     }
-                }
-            };
-            
-            let finalChartType = chartType;
-            if (chartType === 'histogram') finalChartType = 'bar';
-            if (chartType === 'scatter') finalChartType = 'line';
+                };
+            }
             
             document.getElementById('chart-title').textContent = 
                 chartConfig.config?.title || `数据可视化 (${finalChartType})`;
