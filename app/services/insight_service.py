@@ -148,6 +148,15 @@ class InsightService:
                                 cv = std_count / mean_count
                                 
                                 if cv > 0.5:
+                                    sample_days_dict = {}
+                                    for k, v in daily_counts.head(7).items():
+                                        if hasattr(k, 'strftime'):
+                                            sample_days_dict[k.strftime('%Y-%m-%d')] = int(v)
+                                        elif hasattr(k, '__str__'):
+                                            sample_days_dict[str(k)] = int(v)
+                                        else:
+                                            sample_days_dict[k] = int(v)
+                                    
                                     insight = InsightCard(
                                         id=str(uuid.uuid4()),
                                         title="日活跃度存在显著波动",
@@ -165,7 +174,7 @@ class InsightService:
                                         suggestion="建议：1) 分析波动是否与特定业务事件相关；2) 识别高活跃度和低活跃度的日期模式；"
                                                    "3) 考虑是否存在周期性规律（如工作日vs周末）。",
                                         evidence=[
-                                            {"type": "daily_stats", "data": {"sample_days": daily_counts.head(7).to_dict()}}
+                                            {"type": "daily_stats", "data": {"sample_days": sample_days_dict}}
                                         ]
                                     )
                                     insights.append(insight)
