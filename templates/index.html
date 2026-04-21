@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字分析科学家</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            color: white;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1a1a2e;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .upload-section {
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-section:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+        
+        .upload-section.dragover {
+            border-color: #667eea;
+            background: #ebf4ff;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            color: #718096;
+            margin-bottom: 10px;
+        }
+        
+        .upload-hint {
+            font-size: 0.85rem;
+            color: #a0aec0;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #edf2f7;
+            color: #4a5568;
+        }
+        
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .data-source-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .data-source-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: #f7fafc;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+        
+        .data-source-item:hover {
+            background: #edf2f7;
+        }
+        
+        .data-source-item.active {
+            background: #ebf4ff;
+            border: 2px solid #667eea;
+        }
+        
+        .data-source-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .data-source-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .data-source-icon.csv {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .data-source-icon.database {
+            background: #d1fae5;
+            color: #059669;
+        }
+        
+        .data-source-name {
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        
+        .data-source-meta {
+            font-size: 0.85rem;
+            color: #718096;
+        }
+        
+        .insights-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .insight-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-left: 4px solid;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .insight-card:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .insight-card.anomaly {
+            border-color: #ef4444;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+        
+        .insight-card.opportunity {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        }
+        
+        .insight-card.trend {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        }
+        
+        .insight-card.correlation {
+            border-color: #8b5cf6;
+            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+        }
+        
+        .insight-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .insight-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #1a1a2e;
+        }
+        
+        .insight-badge {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .insight-badge.high {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .insight-badge.medium {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .insight-badge.low {
+            background: #d1fae5;
+            color: #059669;
+        }
+        
+        .insight-description {
+            font-size: 0.9rem;
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        
+        .insight-suggestion {
+            font-size: 0.85rem;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 10px 14px;
+            border-radius: 8px;
+            line-height: 1.5;
+        }
+        
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .chat-message {
+            max-width: 80%;
+            padding: 14px 18px;
+            border-radius: 16px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+        
+        .chat-message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .chat-message.assistant {
+            align-self: flex-start;
+            background: white;
+            color: #333;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        
+        .chat-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .chart-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1a1a2e;
+        }
+        
+        .sql-preview {
+            background: #1a1a2e;
+            color: #e2e8f0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .empty-state-text {
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        
+        .empty-state-hint {
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #edf2f7;
+            color: #718096;
+            border: none;
+        }
+        
+        .tab:hover {
+            background: #e2e8f0;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .metric-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .metric-label {
+            font-size: 0.8rem;
+            color: #718096;
+            margin-bottom: 4px;
+        }
+        
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        
+        .quick-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .quick-question {
+            padding: 8px 14px;
+            background: #edf2f7;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        
+        .quick-question:hover {
+            background: #e2e8f0;
+            color: #667eea;
+        }
+        
+        .file-input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔬 数字分析科学家</h1>
+            <p>自动从原始行为数据中嗅探异常、发现机会并提供增长建议</p>
+        </header>
+        
+        <div class="main-layout">
+            <!-- 左侧面板 -->
+            <div>
+                <!-- 数据源管理 -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="icon" style="background: #dbeafe; color: #2563eb;">📊</span>
+                        数据源管理
+                    </div>
+                    
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchTab('upload')">上传CSV</button>
+                        <button class="tab" onclick="switchTab('database')">连接数据库</button>
+                        <button class="tab" onclick="switchTab('list')">已连接</button>
+                    </div>
+                    
+                    <!-- 上传CSV标签页 -->
+                    <div id="upload-tab">
+                        <div class="upload-section" id="drop-zone">
+                            <div class="upload-icon">📁</div>
+                            <div class="upload-text">点击或拖拽CSV文件到此处上传</div>
+                            <div class="upload-hint">支持 .csv 格式文件</div>
+                            <input type="file" id="file-input" class="file-input" accept=".csv">
+                        </div>
+                        <div class="hidden" id="upload-progress">
+                            <div class="loading">
+                                <div class="loading-spinner"></div>
+                            </div>
+                            <p style="text-align: center; color: #718096;">正在上传并解析数据...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 数据库连接标签页 -->
+                    <div id="database-tab" class="hidden">
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #4a5568;">数据库类型</label>
+                                <select id="db-type" class="chat-input">
+                                    <option value="sqlite">SQLite</option>
+                                    <option value="mysql">MySQL</option>
+                                    <option value="postgresql">PostgreSQL</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #4a5568;">数据库名称/路径</label>
+                                <input type="text" id="db-name" class="chat-input" placeholder="例如: my_database">
+                            </div>
+                            <div id="db-connection-fields">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                    <div>
+                                        <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #4a5568;">主机</label>
+                                        <input type="text" id="db-host" class="chat-input" placeholder="localhost">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #4a5568;">端口</label>
+                                        <input type="number" id="db-port" class="chat-input" placeholder="3306">
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+                                    <div>
+                                        <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #4a5568;">用户名</label>
+                                        <input type="text" id="db-user" class="chat-input" placeholder="root">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #4a5568;">密码</label>
+                                        <input type="password" id="db-pass" class="chat-input" placeholder="******">
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #4a5568;">表名（可选）</label>
+                                <input type="text" id="db-table" class="chat-input" placeholder="例如: users">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #4a5568;">数据源名称</label>
+                                <input type="text" id="db-source-name" class="chat-input" placeholder="例如: 生产数据库">
+                            </div>
+                            <button class="btn btn-primary" onclick="connectDatabase()">连接数据库</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 已连接列表标签页 -->
+                    <div id="list-tab" class="hidden">
+                        <div id="data-sources-list">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📂</div>
+                                <div class="empty-state-text">暂无已连接的数据源</div>
+                                <div class="empty-state-hint">请先上传CSV文件或连接数据库</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 业务洞察卡片 -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="icon" style="background: #d1fae5; color: #059669;">💡</span>
+                        业务洞察
+                        <button id="generate-insights-btn" class="btn btn-primary" style="margin-left: auto; padding: 8px 16px; font-size: 0.85rem;" onclick="generateInsights()" disabled>
+                            生成洞察
+                        </button>
+                    </div>
+                    
+                    <div id="insights-container">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <div class="empty-state-text">请先选择数据源</div>
+                            <div class="empty-state-hint">连接数据源后点击"生成洞察"按钮</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧面板 -->
+            <div>
+                <!-- 对话查询 -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="icon" style="background: #fef3c7; color: #d97706;">💬</span>
+                        智能对话查询
+                    </div>
+                    
+                    <div class="quick-questions">
+                        <button class="quick-question" onclick="askQuestion('显示DAU趋势')">显示DAU趋势</button>
+                        <button class="quick-question" onclick="askQuestion('各渠道用户数量对比')">各渠道对比</button>
+                        <button class="quick-question" onclick="askQuestion('转化率是多少')">转化率</button>
+                        <button class="quick-question" onclick="askQuestion('按日期统计订单数量')">订单统计</button>
+                    </div>
+                    
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chat-messages">
+                            <div class="chat-message assistant">
+                                你好！我是你的数字分析科学家。请先连接数据源，然后可以用自然语言提问，比如：<br><br>
+                                • "显示DAU趋势"<br>
+                                • "各渠道用户数量对比"<br>
+                                • "转化率是多少"
+                            </div>
+                        </div>
+                        
+                        <div class="chat-input-container">
+                            <input type="text" id="chat-input" class="chat-input" placeholder="输入你的问题..." onkeypress="handleKeyPress(event)">
+                            <button class="btn btn-primary" onclick="sendMessage()" id="send-btn">发送</button>
+                        </div>
+                    </div>
+                    
+                    <div id="chart-container" class="chart-container hidden">
+                        <div class="chart-title" id="chart-title">数据可视化</div>
+                        <canvas id="chart-canvas" width="400" height="200"></canvas>
+                        <div class="sql-preview hidden" id="sql-preview"></div>
+                    </div>
+                </div>
+                
+                <!-- 数据预览 -->
+                <div class="card" id="data-preview-card">
+                    <div class="card-title">
+                        <span class="icon" style="background: #f5f3ff; color: #8b5cf6;">📋</span>
+                        数据预览
+                    </div>
+                    
+                    <div id="data-preview-content">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-text">暂无数据预览</div>
+                            <div class="empty-state-hint">选择数据源后将显示数据预览</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentDataSourceId = null;
+        let currentChart = null;
+        let dataSources = [];
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            setupDragAndDrop();
+            loadDataSources();
+        });
+        
+        // 设置拖拽上传
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+            
+            dropZone.addEventListener('click', () => fileInput.click());
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    uploadFile(files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    uploadFile(e.target.files[0]);
+                }
+            });
+        }
+        
+        // 切换标签页
+        function switchTab(tabName) {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            
+            document.getElementById('upload-tab').classList.add('hidden');
+            document.getElementById('database-tab').classList.add('hidden');
+            document.getElementById('list-tab').classList.add('hidden');
+            
+            document.getElementById(tabName + '-tab').classList.remove('hidden');
+        }
+        
+        // 上传文件
+        async function uploadFile(file) {
+            if (!file.name.endsWith('.csv')) {
+                alert('请上传CSV格式的文件');
+                return;
+            }
+            
+            const uploadSection = document.getElementById('drop-zone');
+            const uploadProgress = document.getElementById('upload-progress');
+            
+            uploadSection.classList.add('hidden');
+            uploadProgress.classList.remove('hidden');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('name', file.name);
+            
+            try {
+                const response = await fetch('/api/data-source/upload-csv', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('数据上传成功！');
+                    currentDataSourceId = result.id;
+                    await loadDataSources();
+                    await previewData(result.id);
+                } else {
+                    alert('上传失败: ' + (result.detail || '未知错误'));
+                }
+            } catch (error) {
+                alert('上传失败: ' + error.message);
+            } finally {
+                uploadSection.classList.remove('hidden');
+                uploadProgress.classList.add('hidden');
+            }
+        }
+        
+        // 连接数据库
+        async function connectDatabase() {
+            const dbType = document.getElementById('db-type').value;
+            const dbName = document.getElementById('db-name').value;
+            const dbHost = document.getElementById('db-host').value;
+            const dbPort = document.getElementById('db-port').value;
+            const dbUser = document.getElementById('db-user').value;
+            const dbPass = document.getElementById('db-pass').value;
+            const dbTable = document.getElementById('db-table').value;
+            const sourceName = document.getElementById('db-source-name').value || '数据库连接';
+            
+            const requestBody = {
+                name: sourceName,
+                type: 'database',
+                database_config: {
+                    db_type: dbType,
+                    database: dbName,
+                    table_name: dbTable || null
+                }
+            };
+            
+            if (dbType !== 'sqlite') {
+                requestBody.database_config.host = dbHost || 'localhost';
+                requestBody.database_config.port = parseInt(dbPort) || (dbType === 'mysql' ? 3306 : 5432);
+                requestBody.database_config.username = dbUser;
+                requestBody.database_config.password = dbPass;
+            }
+            
+            try {
+                const response = await fetch('/api/data-source/connect', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('数据库连接成功！');
+                    currentDataSourceId = result.id;
+                    await loadDataSources();
+                    await previewData(result.id);
+                } else {
+                    alert('连接失败: ' + (result.detail || '未知错误'));
+                }
+            } catch (error) {
+                alert('连接失败: ' + error.message);
+            }
+        }
+        
+        // 加载数据源列表
+        async function loadDataSources() {
+            try {
+                const response = await fetch('/api/data-source/list');
+                dataSources = await response.json();
+                
+                const listContainer = document.getElementById('data-sources-list');
+                
+                if (dataSources.length === 0) {
+                    listContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📂</div>
+                            <div class="empty-state-text">暂无已连接的数据源</div>
+                            <div class="empty-state-hint">请先上传CSV文件或连接数据库</div>
+                        </div>
+                    `;
+                    document.getElementById('generate-insights-btn').disabled = true;
+                } else {
+                    let html = '<div class="data-source-list">';
+                    dataSources.forEach(ds => {
+                        const isActive = ds.id === currentDataSourceId;
+                        const iconClass = ds.type === 'csv' ? 'csv' : 'database';
+                        const iconEmoji = ds.type === 'csv' ? '📄' : '🗄️';
+                        
+                        html += `
+                            <div class="data-source-item ${isActive ? 'active' : ''}" onclick="selectDataSource('${ds.id}')">
+                                <div class="data-source-info">
+                                    <div class="data-source-icon ${iconClass}">${iconEmoji}</div>
+                                    <div>
+                                        <div class="data-source-name">${ds.name}</div>
+                                        <div class="data-source-meta">${ds.type.toUpperCase()} · ${ds.row_count || 0} 条记录</div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="event.stopPropagation(); deleteDataSource('${ds.id}')">删除</button>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    listContainer.innerHTML = html;
+                    document.getElementById('generate-insights-btn').disabled = false;
+                }
+            } catch (error) {
+                console.error('加载数据源失败:', error);
+            }
+        }
+        
+        // 选择数据源
+        async function selectDataSource(id) {
+            currentDataSourceId = id;
+            await loadDataSources();
+            await previewData(id);
+        }
+        
+        // 删除数据源
+        async function deleteDataSource(id) {
+            if (!confirm('确定要删除这个数据源吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/data-source/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    if (currentDataSourceId === id) {
+                        currentDataSourceId = null;
+                    }
+                    await loadDataSources();
+                    
+                    document.getElementById('insights-container').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <div class="empty-state-text">请先选择数据源</div>
+                            <div class="empty-state-hint">连接数据源后点击"生成洞察"按钮</div>
+                        </div>
+                    `;
+                    
+                    document.getElementById('data-preview-content').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-text">暂无数据预览</div>
+                            <div class="empty-state-hint">选择数据源后将显示数据预览</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                alert('删除失败: ' + error.message);
+            }
+        }
+        
+        // 预览数据
+        async function previewData(dataSourceId) {
+            try {
+                const response = await fetch(`/api/data-source/${dataSourceId}/preview`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    let html = '';
+                    
+                    html += '<div class="metrics-grid">';
+                    html += `<div class="metric-item"><div class="metric-label">总记录数</div><div class="metric-value">${result.total_rows}</div></div>`;
+                    html += `<div class="metric-item"><div class="metric-label">字段数</div><div class="metric-value">${result.columns.length}</div></div>`;
+                    html += '</div>';
+                    
+                    html += '<div style="margin-top: 16px; overflow-x: auto;">';
+                    html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">';
+                    
+                    html += '<thead><tr style="background: #f7fafc;">';
+                    result.columns.forEach(col => {
+                        const dtype = result.data_types[col] || 'unknown';
+                        html += `<th style="padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0; color: #4a5568;">
+                            ${col} <span style="font-size: 0.7rem; color: #a0aec0;">(${dtype})</span>
+                        </th>`;
+                    });
+                    html += '</tr></thead>';
+                    
+                    html += '<tbody>';
+                    result.preview.forEach((row, index) => {
+                        html += `<tr style="${index % 2 === 0 ? 'background: white;' : 'background: #f8fafc;'}">`;
+                        result.columns.forEach(col => {
+                            html += `<td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #1a1a2e;">${row[col] !== null ? row[col] : '<span style="color: #a0aec0;">NULL</span>'}</td>`;
+                        });
+                        html += '</tr>';
+                    });
+                    html += '</tbody>';
+                    
+                    html += '</table>';
+                    html += `<div style="margin-top: 10px; font-size: 0.8rem; color: #718096; text-align: right;">显示前 ${result.preview_rows} 条记录</div>`;
+                    html += '</div>';
+                    
+                    document.getElementById('data-preview-content').innerHTML = html;
+                }
+            } catch (error) {
+                console.error('预览数据失败:', error);
+            }
+        }
+        
+        // 生成洞察
+        async function generateInsights() {
+            if (!currentDataSourceId) {
+                alert('请先选择一个数据源');
+                return;
+            }
+            
+            const container = document.getElementById('insights-container');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                </div>
+                <p style="text-align: center; color: #718096;">正在分析数据并生成洞察...</p>
+            `;
+            
+            try {
+                const response = await fetch(`/api/insights/generate/${currentDataSourceId}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.insights && result.insights.length > 0) {
+                    let html = '<div class="insights-container">';
+                    
+                    result.insights.forEach(insight => {
+                        const typeClass = insight.type;
+                        const severityClass = insight.severity === '高' ? 'high' : 
+                                             insight.severity === '中' ? 'medium' : 'low';
+                        
+                        const typeEmoji = {
+                            'anomaly': '⚠️',
+                            'opportunity': '🚀',
+                            'trend': '📈',
+                            'correlation': '🔗'
+                        }[insight.type] || '💡';
+                        
+                        const typeName = {
+                            'anomaly': '异常检测',
+                            'opportunity': '增长机会',
+                            'trend': '趋势分析',
+                            'correlation': '相关性'
+                        }[insight.type] || '洞察';
+                        
+                        html += `
+                            <div class="insight-card ${typeClass}">
+                                <div class="insight-header">
+                                    <div class="insight-title">${typeEmoji} ${insight.title}</div>
+                                    <span class="insight-badge ${severityClass}">${insight.severity}级</span>
+                                </div>
+                                <div class="insight-description">${insight.description}</div>
+                        `;
+                        
+                        if (insight.metrics && Object.keys(insight.metrics).length > 0) {
+                            html += '<div class="metrics-grid">';
+                            Object.entries(insight.metrics).forEach(([key, value]) => {
+                                const displayKey = key.replace(/_/g, ' ');
+                                const displayValue = typeof value === 'number' ? value.toFixed(2) : value;
+                                html += `<div class="metric-item"><div class="metric-label">${displayKey}</div><div class="metric-value">${displayValue}</div></div>`;
+                            });
+                            html += '</div>';
+                        }
+                        
+                        html += `
+                                <div class="insight-suggestion">💡 ${insight.suggestion}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-text">未发现显著的业务洞察</div>
+                            <div class="empty-state-hint">数据可能较为规范，尝试使用更多数据</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <div class="empty-state-text">生成洞察失败</div>
+                        <div class="empty-state-hint">${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        // 快速提问
+        function askQuestion(question) {
+            document.getElementById('chat-input').value = question;
+            sendMessage();
+        }
+        
+        // 处理回车发送
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        // 发送消息
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            if (!currentDataSourceId) {
+                addMessage('assistant', '请先连接数据源才能进行查询。');
+                return;
+            }
+            
+            addMessage('user', message);
+            input.value = '';
+            
+            document.getElementById('send-btn').disabled = true;
+            
+            try {
+                const response = await fetch('/api/chat/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        data_source_id: currentDataSourceId,
+                        query: message
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    addMessage('assistant', result.response_text);
+                    
+                    if (result.sql_query) {
+                        document.getElementById('sql-preview').textContent = 'SQL: ' + result.sql_query.sql;
+                        document.getElementById('sql-preview').classList.remove('hidden');
+                    }
+                    
+                    if (result.chart_config && result.execution_result && result.execution_result.data) {
+                        renderChart(result.execution_result.data, result.chart_config);
+                    }
+                } else {
+                    addMessage('assistant', '查询失败: ' + (result.detail || '未知错误'));
+                }
+            } catch (error) {
+                addMessage('assistant', '查询出错: ' + error.message);
+            } finally {
+                document.getElementById('send-btn').disabled = false;
+            }
+        }
+        
+        // 添加消息到聊天界面
+        function addMessage(role, content) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${role}`;
+            messageDiv.textContent = content;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // 渲染图表
+        function renderChart(data, chartConfig) {
+            const chartContainer = document.getElementById('chart-container');
+            const ctx = document.getElementById('chart-canvas').getContext('2d');
+            
+            if (currentChart) {
+                currentChart.destroy();
+            }
+            
+            chartContainer.classList.remove('hidden');
+            
+            const chartType = chartConfig.chart_type || 'bar';
+            
+            let chartData = {
+                labels: [],
+                datasets: []
+            };
+            
+            if (chartConfig.data && chartConfig.data.labels) {
+                chartData.labels = chartConfig.data.labels;
+            } else if (data.length > 0) {
+                const firstRow = data[0];
+                const keys = Object.keys(firstRow);
+                const nonNumericKeys = keys.filter(k => isNaN(parseFloat(firstRow[k])));
+                const numericKeys = keys.filter(k => !isNaN(parseFloat(firstRow[k])));
+                
+                if (nonNumericKeys.length > 0) {
+                    chartData.labels = data.map(d => d[nonNumericKeys[0]]);
+                }
+                
+                if (numericKeys.length > 0) {
+                    chartData.datasets = numericKeys.map((key, index) => {
+                        const colors = [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(118, 75, 162, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(245, 158, 11, 0.8)'
+                        ];
+                        
+                        return {
+                            label: key,
+                            data: data.map(d => d[key]),
+                            backgroundColor: colors[index % colors.length],
+                            borderColor: colors[index % colors.length].replace('0.8', '1'),
+                            borderWidth: 2,
+                            fill: chartType === 'line' ? false : true
+                        };
+                    });
+                }
+            }
+            
+            const options = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: chartType === 'pie' ? {} : {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            };
+            
+            let finalChartType = chartType;
+            if (chartType === 'histogram') finalChartType = 'bar';
+            if (chartType === 'scatter') finalChartType = 'line';
+            
+            document.getElementById('chart-title').textContent = 
+                chartConfig.config?.title || `数据可视化 (${finalChartType})`;
+            
+            currentChart = new Chart(ctx, {
+                type: finalChartType,
+                data: chartData,
+                options: options
+            });
+        }
+    </script>
+</body>
+</html>
