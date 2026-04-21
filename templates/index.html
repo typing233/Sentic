@@ -377,6 +377,11 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
         
+        #chart-canvas {
+            height: 300px !important;
+            width: 100% !important;
+        }
+        
         .chart-title {
             font-weight: 600;
             margin-bottom: 15px;
@@ -1248,7 +1253,8 @@
             
             let options = {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
                 plugins: {
                     legend: {
                         position: 'top'
