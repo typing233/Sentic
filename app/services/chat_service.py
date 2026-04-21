@@ -296,17 +296,95 @@ class ChatService:
             return "未找到符合条件的数据。请检查查询条件是否正确。"
         
         response_parts = []
+        query_lower = query.lower()
         
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
         
-        for col in numeric_cols:
-            data = df[col].dropna()
-            if len(data) > 0:
-                response_parts.append(f"「{col}」的统计信息：")
-                response_parts.append(f"- 总数: {len(data)} 条")
-                response_parts.append(f"- 平均值: {data.mean():.2f}")
-                response_parts.append(f"- 最大值: {data.max():.2f}")
-                response_parts.append(f"- 最小值: {data.min():.2f}")
+        if '日活' in query or 'dau' in query_lower or '活跃用户' in query:
+            if len(df) == 1 and 'dau' in df.columns:
+                response_parts.append(f"📊 查询结果：")
+                response_parts.append(f"日活跃用户数 (DAU): {df['dau'].iloc[0]}")
+            elif len(df) > 1:
+                dau_col = None
+                for col in df.columns:
+                    if 'dau' in col.lower() or 'count' in col.lower():
+                        dau_col = col
+                        break
+                
+                if dau_col and len(df) > 0:
+                    response_parts.append(f"📊 查询结果：共 {len(df)} 条记录")
+                    response_parts.append(f"{dau_col} 的统计：")
+                    response_parts.append(f"- 最大值: {df[dau_col].max():.0f}")
+                    response_parts.append(f"- 最小值: {df[dau_col].min():.0f}")
+                    response_parts.append(f"- 平均值: {df[dau_col].mean():.1f}")
+                    response_parts.append(f"- 总计: {df[dau_col].sum():.0f}")
+        
+        elif '转化' in query or 'conversion' in query_lower:
+            response_parts.append(f"📊 转化率分析：")
+            if len(df) > 0:
+                response_parts.append(f"共分析 {len(df)} 条记录")
+                if numeric_cols:
+                    col = numeric_cols[0]
+                    converted = (df[col] > 0).sum()
+                    total = len(df)
+                    rate = converted / total * 100 if total > 0 else 0
+                    response_parts.append(f"- 转化数量: {converted}")
+                    response_parts.append(f"- 总数量: {total}")
+                    response_parts.append(f"- 转化率: {rate:.1f}%")
+        
+        elif '总和' in query or '总计' in query or 'sum' in query_lower:
+            response_parts.append(f"📊 求和结果：")
+            for col in numeric_cols[:5]:
+                total = df[col].sum()
+                response_parts.append(f"- {col}: {total:.2f}")
+        
+        elif '平均' in query or '均值' in query or 'average' in query_lower:
+            response_parts.append(f"📊 平均值结果：")
+            for col in numeric_cols[:5]:
+                avg = df[col].mean()
+                response_parts.append(f"- {col}: {avg:.2f}")
+        
+        elif '最大' in query or '最高' in query or 'max' in query_lower:
+            response_parts.append(f"📊 最大值结果：")
+            for col in numeric_cols[:5]:
+                max_val = df[col].max()
+                response_parts.append(f"- {col}: {max_val:.2f}")
+        
+        elif '最小' in query or '最低' in query or 'min' in query_lower:
+            response_parts.append(f"📊 最小值结果：")
+            for col in numeric_cols[:5]:
+                min_val = df[col].min()
+                response_parts.append(f"- {col}: {min_val:.2f}")
+        
+        elif '数量' in query or '多少' in query or 'count' in query_lower:
+            response_parts.append(f"📊 查询结果：")
+            response_parts.append(f"共找到 {len(df)} 条记录")
+        
+        else:
+            response_parts.append(f"📊 查询结果：共 {len(df)} 条记录")
+            
+            if categorical_cols and len(df) <= 20:
+                response_parts.append(f"\n数据预览：")
+                for i, row in df.head(10).iterrows():
+                    preview_parts = []
+                    for col in categorical_cols[:2]:
+                        preview_parts.append(f"{row[col]}")
+                    for col in numeric_cols[:2]:
+                        preview_parts.append(f"{col}: {row[col]:.2f}" if pd.notna(row[col]) else f"{col}: N/A")
+                    if preview_parts:
+                        response_parts.append(f"- {' | '.join(preview_parts)}")
+                
+                if len(df) > 10:
+                    response_parts.append(f"... 还有 {len(df) - 10} 条记录")
+            
+            elif numeric_cols:
+                response_parts.append(f"\n数值字段统计：")
+                for col in numeric_cols[:5]:
+                    data = df[col].dropna()
+                    if len(data) > 0:
+                        response_parts.append(f"「{col}」：")
+                        response_parts.append(f"  总计: {len(data)} 条 | 平均: {data.mean():.2f} | 最大: {data.max():.2f} | 最小: {data.min():.2f}")
         
         if chart_type == 'line':
             response_parts.append("\n💡 建议使用折线图展示数据趋势变化。")
@@ -316,6 +394,8 @@ class ChatService:
             response_parts.append("\n💡 建议使用饼图展示各部分占比情况。")
         elif chart_type == 'scatter':
             response_parts.append("\n💡 建议使用散点图观察变量间的相关性。")
+        elif chart_type == 'histogram':
+            response_parts.append("\n💡 建议使用直方图观察数据分布。")
         
         return "\n".join(response_parts)
     
