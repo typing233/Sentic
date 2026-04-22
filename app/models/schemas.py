@@ -41,6 +41,7 @@ class DataSourceResponse(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now, description="创建时间")
     columns: Optional[List[str]] = Field(None, description="数据列名")
     row_count: Optional[int] = Field(None, description="数据行数")
+    project_id: Optional[str] = Field(None, description="所属项目ID")
 
 
 class InsightType(str, Enum):
@@ -72,6 +73,7 @@ class ChatRequest(BaseModel):
     data_source_id: str = Field(..., description="数据源ID")
     query: str = Field(..., description="自然语言查询")
     conversation_id: Optional[str] = Field(None, description="会话ID")
+    project_id: Optional[str] = Field(None, description="项目ID")
 
 
 class SQLQuery(BaseModel):
@@ -111,3 +113,189 @@ class ErrorResponse(BaseModel):
     error: str = Field(..., description="错误类型")
     message: str = Field(..., description="错误信息")
     details: Optional[Dict[str, Any]] = Field(None, description="详细信息")
+
+
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    EDITOR = "editor"
+    VIEWER = "viewer"
+
+
+class WidgetType(str, Enum):
+    CHART = "chart"
+    INSIGHT = "insight"
+    TEXT = "text"
+    TABLE = "table"
+
+
+class ShareType(str, Enum):
+    DASHBOARD = "dashboard"
+    CHART = "chart"
+    DATA_SOURCE = "data_source"
+
+
+class UserCreate(BaseModel):
+    email: str = Field(..., description="邮箱")
+    username: str = Field(..., description="用户名")
+    password: str = Field(..., description="密码")
+    full_name: Optional[str] = Field(None, description="姓名")
+
+
+class UserLogin(BaseModel):
+    email: str = Field(..., description="邮箱或用户名")
+    password: str = Field(..., description="密码")
+
+
+class UserResponse(BaseModel):
+    id: str = Field(..., description="用户ID")
+    email: str = Field(..., description="邮箱")
+    username: str = Field(..., description="用户名")
+    full_name: Optional[str] = Field(None, description="姓名")
+    is_active: bool = Field(..., description="是否激活")
+    created_at: datetime = Field(..., description="创建时间")
+
+
+class Token(BaseModel):
+    access_token: str = Field(..., description="访问令牌")
+    token_type: str = Field(default="bearer", description="令牌类型")
+    user: UserResponse = Field(..., description="用户信息")
+
+
+class TeamCreate(BaseModel):
+    name: str = Field(..., description="团队名称")
+    description: Optional[str] = Field(None, description="团队描述")
+
+
+class TeamResponse(BaseModel):
+    id: str = Field(..., description="团队ID")
+    name: str = Field(..., description="团队名称")
+    description: Optional[str] = Field(None, description="团队描述")
+    owner_id: str = Field(..., description="创建者ID")
+    created_at: datetime = Field(..., description="创建时间")
+    member_count: int = Field(default=0, description="成员数量")
+
+
+class ProjectCreate(BaseModel):
+    name: str = Field(..., description="项目名称")
+    description: Optional[str] = Field(None, description="项目描述")
+    team_id: Optional[str] = Field(None, description="所属团队ID")
+    is_public: bool = Field(default=False, description="是否公开")
+
+
+class ProjectResponse(BaseModel):
+    id: str = Field(..., description="项目ID")
+    name: str = Field(..., description="项目名称")
+    description: Optional[str] = Field(None, description="项目描述")
+    team_id: Optional[str] = Field(None, description="所属团队ID")
+    owner_id: str = Field(..., description="创建者ID")
+    is_public: bool = Field(default=False, description="是否公开")
+    created_at: datetime = Field(..., description="创建时间")
+
+
+class DashboardWidgetCreate(BaseModel):
+    title: Optional[str] = Field(None, description="组件标题")
+    widget_type: str = Field(..., description="组件类型")
+    position: int = Field(default=0, description="位置")
+    width: int = Field(default=12, description="宽度")
+    height: int = Field(default=4, description="高度")
+    data_source_id: Optional[str] = Field(None, description="数据源ID")
+    query: Optional[str] = Field(None, description="查询语句")
+    chart_config: Optional[Dict[str, Any]] = Field(None, description="图表配置")
+    chart_type: Optional[str] = Field(None, description="图表类型")
+    insight_id: Optional[str] = Field(None, description="洞察ID")
+    content: Optional[str] = Field(None, description="文本内容")
+
+
+class DashboardWidgetUpdate(BaseModel):
+    title: Optional[str] = Field(None, description="组件标题")
+    position: Optional[int] = Field(None, description="位置")
+    width: Optional[int] = Field(None, description="宽度")
+    height: Optional[int] = Field(None, description="高度")
+    chart_config: Optional[Dict[str, Any]] = Field(None, description="图表配置")
+    content: Optional[str] = Field(None, description="文本内容")
+
+
+class DashboardWidgetResponse(BaseModel):
+    id: str = Field(..., description="组件ID")
+    dashboard_id: str = Field(..., description="看板ID")
+    title: Optional[str] = Field(None, description="组件标题")
+    widget_type: str = Field(..., description="组件类型")
+    position: int = Field(default=0, description="位置")
+    width: int = Field(default=12, description="宽度")
+    height: int = Field(default=4, description="高度")
+    data_source_id: Optional[str] = Field(None, description="数据源ID")
+    query: Optional[str] = Field(None, description="查询语句")
+    chart_config: Optional[Dict[str, Any]] = Field(None, description="图表配置")
+    chart_type: Optional[str] = Field(None, description="图表类型")
+    insight_id: Optional[str] = Field(None, description="洞察ID")
+    content: Optional[str] = Field(None, description="文本内容")
+    created_at: datetime = Field(..., description="创建时间")
+    updated_at: datetime = Field(..., description="更新时间")
+
+
+class DashboardCreate(BaseModel):
+    name: str = Field(..., description="看板名称")
+    description: Optional[str] = Field(None, description="看板描述")
+    project_id: str = Field(..., description="所属项目ID")
+    is_public: bool = Field(default=False, description="是否公开")
+    layout_config: Optional[Dict[str, Any]] = Field(None, description="布局配置")
+
+
+class DashboardUpdate(BaseModel):
+    name: Optional[str] = Field(None, description="看板名称")
+    description: Optional[str] = Field(None, description="看板描述")
+    is_public: Optional[bool] = Field(None, description="是否公开")
+    layout_config: Optional[Dict[str, Any]] = Field(None, description="布局配置")
+
+
+class DashboardResponse(BaseModel):
+    id: str = Field(..., description="看板ID")
+    name: str = Field(..., description="看板名称")
+    description: Optional[str] = Field(None, description="看板描述")
+    project_id: str = Field(..., description="所属项目ID")
+    owner_id: str = Field(..., description="创建者ID")
+    is_public: bool = Field(default=False, description="是否公开")
+    layout_config: Optional[Dict[str, Any]] = Field(None, description="布局配置")
+    widgets: List[DashboardWidgetResponse] = Field(default_factory=list, description="组件列表")
+    created_at: datetime = Field(..., description="创建时间")
+    updated_at: datetime = Field(..., description="更新时间")
+
+
+class ShareLinkCreate(BaseModel):
+    share_type: str = Field(..., description="分享类型")
+    target_id: str = Field(..., description="目标ID")
+    expires_in_hours: Optional[int] = Field(None, description="过期时间（小时），None表示永不过期")
+
+
+class ShareLinkResponse(BaseModel):
+    id: str = Field(..., description="分享链接ID")
+    token: str = Field(..., description="分享令牌")
+    share_type: str = Field(..., description="分享类型")
+    target_id: str = Field(..., description="目标ID")
+    share_url: str = Field(..., description="分享链接")
+    expires_at: Optional[datetime] = Field(None, description="过期时间")
+    is_active: bool = Field(..., description="是否激活")
+    view_count: int = Field(default=0, description="访问次数")
+    created_at: datetime = Field(..., description="创建时间")
+
+
+class ExportRequest(BaseModel):
+    format: str = Field(..., description="导出格式: png, pdf, csv")
+    data_source_id: Optional[str] = Field(None, description="数据源ID（用于CSV导出）")
+    query: Optional[str] = Field(None, description="查询语句（用于CSV导出）")
+    chart_config: Optional[Dict[str, Any]] = Field(None, description="图表配置（用于图片导出）")
+    width: int = Field(default=1200, description="图片宽度")
+    height: int = Field(default=800, description="图片高度")
+
+
+class ProjectMemberAdd(BaseModel):
+    user_id: str = Field(..., description="用户ID")
+    role: str = Field(default="viewer", description="角色: admin, editor, viewer")
+
+
+class ProjectMemberResponse(BaseModel):
+    user_id: str = Field(..., description="用户ID")
+    username: str = Field(..., description="用户名")
+    email: str = Field(..., description="邮箱")
+    role: str = Field(..., description="角色")
+    joined_at: datetime = Field(..., description="加入时间")
